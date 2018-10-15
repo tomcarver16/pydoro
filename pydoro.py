@@ -1,7 +1,13 @@
 import time
 import sys    
 import datetime
-from termcolor import colored
+import argparse
+import os
+
+#Constants
+CURSOR_UP_ONE = '\x1b[1A'
+ERASE_LINE = '\x1b[2K'
+
 
 class Timer:
     def __init__(self, seconds, timeType):
@@ -15,8 +21,17 @@ class Timer:
                 self.show_time(self.time)
                 time.sleep(1)
         except KeyboardInterrupt:
-            print()
-            stored_exception=sys.exc_info()
+            self.validate_quit()
+
+    def validate_quit(self):
+        sys.stdout.write(ERASE_LINE + '\b\b')
+        action = str(raw_input("Do you want to quit Y/N: ")).lower()
+        if action == 'y':
+            sys.exit()
+        elif action == 'n':
+            focusMins = int(input("How many focus mins do you want: "))
+            breakMins = int(input("How many break mins do you want: "))
+            create_timers(focusMins, breakMins)
 
     def tick(self):
         return self.time - 1
@@ -37,17 +52,49 @@ class Timer:
         self.progress(self.i, self.seconds, suffix='Complete')
         sys.stdout.flush()
 
-if __name__ == "__main__":
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--focus_time', help='Focus minutes', type=int, default=25)
+    parser.add_argument('-b', '--break_time', help='Break minutes', type=int, default=5)
+    args = parser.parse_args()
+    create_timers(args.focus_time, args.break_time)
+    # isBackground = parser.add_argument('--background', help='If the timer is running in the background', type=bool, default=False)
+
+def print_clock():
+    clock = """
+.'`~~~~~~~~~~~`'.
+(  .'11 12 1'.  )
+|  :10 \|   2:  |
+|  :9   @   3:  |
+|  :8       4;  |
+'. '..7 6 5..' .'
+ ~-------------~ 
+    """
+    sys.stdout.write(clock)
+    return
+
+def create_timers(focusMins, breakMins):
     focusTime = True
-    focusMins = int(input(colored("How many focus mins do you want: ", 'red')))
-    breakMins = int(input("How many break mins do you want: "))
-    while True:
-        try:
-            if focusTime == True:
-                focusTimer = Timer(focusMins*60, "Focus")
-                focusTime = False
-            else:
-                breakTimer = Timer(breakMins*60, "Break")
-                focusTime = True
-        except KeyboardInterrupt:
-            break
+    try:
+        while focusTime == True:
+            focusTimer = Timer(focusMins*60, "Focus")
+            print_clock()
+            focusTime = False
+        else:
+            breakTimer = Timer(breakMins*60, "Break")
+            print_clock()
+            focusTime = True
+    except KeyboardInterrupt as ki:
+        sys.exit()
+        
+def clear_screen():
+    if os.name == "posix":
+        os.system("clear")
+    elif os.name == "nt":
+        os.system("cls")
+    return
+
+if __name__ == "__main__":
+    clear_screen()
+    main()
